@@ -1,118 +1,65 @@
 import java.io.*;
 import java.net.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 public class Servidor {
     public static void main(String[] args) throws IOException {
-        int porta = 12345;
-        ServerSocket servidor = new ServerSocket(porta);
-        System.out.println("Servidor de Signos iniciado na porta " + porta);
+        ServerSocket servidor = new ServerSocket(12345);
+        System.out.println("Servidor conectado a porta 12345!");
 
         while (true) {
             Socket cliente = servidor.accept();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    tratarCliente(cliente);
-                }
-            }).start();
-        }
-    }
+            System.out.println("Cliente conectado: " + cliente.getInetAddress().getHostAddress());
 
-    public static void tratarCliente(Socket socket) {
-        try {
-            BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            PrintWriter saida = new PrintWriter(socket.getOutputStream(), true);
-            saida.println("Bem-vindo! \nDigite 1 - para descobrir o signo \n2 - para ver o horóscopo do dia");
-            String opcao = entrada.readLine();
+            BufferedReader entrada = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
+            PrintStream saida = new PrintStream(cliente.getOutputStream());
 
-            if ("1".equals(opcao)) {
-                saida.println("Digite sua data de nascimento no formato dd/MM:");
-                String dataNascimento = entrada.readLine();
-                String signo = descobrirSigno(dataNascimento);
-                saida.println("Seu signo e: " + signo);
-            } else if ("2".equals(opcao)) {
-                saida.println("Digite seu signo (ex: Aries, Touro, etc.):");
-                String signo = entrada.readLine().toLowerCase();
-                String horoscopo = getHoroscopo(signo);
-                saida.println("Horoscopo para " + signo + ": " + horoscopo);
+            String mensagem = entrada.readLine();
+            System.out.println("Mensagem recebida: " + mensagem);
+
+            if (mensagem.startsWith("SIGNO:")) {
+                String[] partes = mensagem.split(":")[1].split("/");
+                int dia = Integer.parseInt(partes[0]);
+                int mes = Integer.parseInt(partes[1]);
+
+                String signo = descobrirSigno(dia, mes);
+                saida.println("Seu signo é: " + signo);
+            } else if (mensagem.equals("HOROSCOPO")) {
+                saida.println("Hoje é um ótimo dia para aprender algo novo!");
             } else {
-                saida.println("Opção inválida.");
+                saida.println("Comando inválido.");
             }
 
-        } catch (IOException e) {
-            System.out.println("Erro ao comunicar com cliente: " + e.getMessage());
+            entrada.close();
+            saida.close();
+            cliente.close();
         }
     }
 
-    public static String descobrirSigno(String dataStr) {
-        try {
-            LocalDate data = LocalDate.parse(dataStr + "/2000", DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            int dia = data.getDayOfMonth();
-            int mes = data.getMonthValue();
-
-            switch (mes) {
-                case 1:
-                    return (dia < 20) ? "Capricórnio" : "Aquário";
-                case 2:
-                    return (dia < 19) ? "Aquário" : "Peixes";
-                case 3:
-                    return (dia < 21) ? "Peixes" : "Áries";
-                case 4:
-                    return (dia < 20) ? "Áries" : "Touro";
-                case 5:
-                    return (dia < 21) ? "Touro" : "Gêmeos";
-                case 6:
-                    return (dia < 21) ? "Gêmeos" : "Câncer";
-                case 7:
-                    return (dia < 23) ? "Câncer" : "Leão";
-                case 8:
-                    return (dia < 23) ? "Leão" : "Virgem";
-                case 9:
-                    return (dia < 23) ? "Virgem" : "Libra";
-                case 10:
-                    return (dia < 23) ? "Libra" : "Escorpião";
-                case 11:
-                    return (dia < 22) ? "Escorpião" : "Sagitário";
-                case 12:
-                    return (dia < 22) ? "Sagitário" : "Capricórnio";
-                default:
-                    return "Data inválida";
-            }
-        } catch (Exception e) {
-            return "Erro ao interpretar a data.";
-        }
-    }
-
-    public static String getHoroscopo(String signo) {
-        switch (signo) {
-            case "aries":
-                return "Hoje é um bom dia para começar algo novo.";
-            case "touro":
-                return "Evite gastos desnecessários e confie no seu instinto.";
-            case "gemeos":
-                return "Comunique-se com clareza para evitar mal-entendidos.";
-            case "cancer":
-                return "Cuide das suas emoções e ouça seu coração.";
-            case "leao":
-                return "Brilhe: return mas lembre-se de ouvir os outros.";
-            case "virgem":
-                return "Organize suas tarefas e mantenha o foco.";
-            case "libra":
-                return "Busque o equilíbrio nas suas decisões.";
-            case "escorpiao":
-                return "A profundidade dos sentimentos trará revelações.";
-            case "sagitario":
-                return "Aventure-se: return mas não negligencie suas responsabilidades.";
-            case "capricornio":
-                return "Trabalho duro trará recompensas.";
-            case "aquario":
-                return "Ideias inovadoras estarão em destaque.";
-            case "peixes":
-                return "Sua intuição será seu melhor guia hoje.";
-            default:
-                return "Nao achei seu signo";
-        }
+    private static String descobrirSigno(int dia, int mes) {
+        if ((mes == 3 && dia >= 21) || (mes == 4 && dia <= 19))
+            return "Áries";
+        if ((mes == 4 && dia >= 20) || (mes == 5 && dia <= 20))
+            return "Touro";
+        if ((mes == 5 && dia >= 21) || (mes == 6 && dia <= 20))
+            return "Gêmeos";
+        if ((mes == 6 && dia >= 21) || (mes == 7 && dia <= 22))
+            return "Câncer";
+        if ((mes == 7 && dia >= 23) || (mes == 8 && dia <= 22))
+            return "Leão";
+        if ((mes == 8 && dia >= 23) || (mes == 9 && dia <= 22))
+            return "Virgem";
+        if ((mes == 9 && dia >= 23) || (mes == 10 && dia <= 22))
+            return "Libra";
+        if ((mes == 10 && dia >= 23) || (mes == 11 && dia <= 21))
+            return "Escorpião";
+        if ((mes == 11 && dia >= 22) || (mes == 12 && dia <= 21))
+            return "Sagitário";
+        if ((mes == 12 && dia >= 22) || (mes == 1 && dia <= 19))
+            return "Capricórnio";
+        if ((mes == 1 && dia >= 20) || (mes == 2 && dia <= 18))
+            return "Aquário";
+        if ((mes == 2 && dia >= 19) || (mes == 3 && dia <= 20))
+            return "Peixes";
+        return "Desconhecido";
     }
 }
